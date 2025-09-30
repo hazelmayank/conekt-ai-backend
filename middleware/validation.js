@@ -50,7 +50,7 @@ const schemas = {
   
   checkAvailability: Joi.object({
     routeId: Joi.string().required(),
-    package: Joi.string().valid('7', '15', '30').required(),
+    package: Joi.string().valid('15', '30').required(),
     startDate: Joi.date().min('now').required()
   }),
   

@@ -117,7 +117,19 @@ router.post('/campaigns/:id/reject', authenticateToken, requireAdmin, validateRe
 router.post('/playlists/generate', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { truckId, date } = req.body;
+    
+    if (!truckId) {
+      return res.status(400).json({ error: 'truckId is required' });
+    }
+
     const targetDate = date ? new Date(date) : new Date();
+    console.log(`Generating playlist for truck ${truckId} on date ${targetDate}`);
+
+    // Verify truck exists
+    const truck = await Truck.findById(truckId);
+    if (!truck) {
+      return res.status(404).json({ error: 'Truck not found' });
+    }
 
     // Get active campaigns for this truck on the target date
     const campaigns = await Campaign.find({
@@ -127,19 +139,27 @@ router.post('/playlists/generate', authenticateToken, requireAdmin, async (req, 
       endDate: { $gte: targetDate }
     }).populate('asset');
 
+    console.log(`Found ${campaigns.length} active campaigns for truck ${truckId}`);
+
     if (campaigns.length === 0) {
       return res.status(400).json({ error: 'No active campaigns for this truck' });
     }
 
     // Create playlist items
-    const playlistItems = campaigns.map(campaign => ({
-      id: campaign.asset._id.toString(),
-      type: 'video',
-      url: campaign.asset.url,
-      checksum: campaign.asset.checksum,
-      duration: campaign.asset.durationSec,
-      loop: false
-    }));
+    const playlistItems = campaigns.map(campaign => {
+      if (!campaign.asset) {
+        throw new Error(`Campaign ${campaign._id} has no asset`);
+      }
+      
+      return {
+        id: campaign.asset._id.toString(),
+        type: 'video',
+        url: campaign.asset.url,
+        checksum: campaign.asset.checksum || 'no-checksum',
+        duration: campaign.asset.durationSec,
+        loop: false
+      };
+    });
 
     // Generate version
     const version = `v${Date.now()}`;
@@ -157,6 +177,8 @@ router.post('/playlists/generate', authenticateToken, requireAdmin, async (req, 
       { upsert: true, new: true }
     );
 
+    console.log(`Playlist generated successfully: ${playlist._id}`);
+
     res.json({
       id: playlist._id,
       version: playlist.version,
@@ -165,7 +187,10 @@ router.post('/playlists/generate', authenticateToken, requireAdmin, async (req, 
     });
   } catch (error) {
     console.error('Generate playlist error:', error);
-    res.status(500).json({ error: 'Failed to generate playlist' });
+    res.status(500).json({ 
+      error: 'Failed to generate playlist',
+      details: error.message 
+    });
   }
 });
 

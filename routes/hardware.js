@@ -56,7 +56,7 @@ router.get('/:id/playlist', authenticateHardware, async (req, res) => {
     const { id } = req.params;
    const { date }=req.body;
     // Compute *UTC* day window for "today"
-    const now = new Datenow
+    const now = new Date();
     const startUtc = new Date(Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),

@@ -23,7 +23,7 @@ const authenticateHardware = (req, res, next) => {
 router.post('/:id/heartbeat', authenticateHardware, validateRequest(schemas.truckHeartbeat), async (req, res) => {
   try {
     const { id } = req.params;
-    const { device_id, status, uptime_seconds, last_ad_playback_timestamp } = req.body;
+    const { device_id, status, uptime_seconds, last_ad_playback_timestamp, gps_coordinates } = req.body;
 
     const truck = await Truck.findById(id);
     if (!truck) {
@@ -36,6 +36,15 @@ router.post('/:id/heartbeat', authenticateHardware, validateRequest(schemas.truc
     truck.uptimeSeconds = uptime_seconds;
     if (last_ad_playback_timestamp) {
       truck.lastAdPlaybackTimestamp = new Date(last_ad_playback_timestamp);
+    }
+
+    // Update GPS coordinates if provided
+    if (gps_coordinates) {
+      truck.gpsCoordinates = {
+        latitude: gps_coordinates.latitude,
+        longitude: gps_coordinates.longitude,
+        timestamp: gps_coordinates.timestamp ? new Date(gps_coordinates.timestamp) : new Date()
+      };
     }
 
     await truck.save();

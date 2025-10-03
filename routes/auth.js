@@ -70,7 +70,7 @@ router.post('/login', validateRequest(schemas.login), async (req, res) => {
     const { phone, password } = req.body;
 
     const user = await User.findOne({ phone });
-    if (!user || user.role !== 'advertiser' || !user.passwordHash) {
+    if (!user  || !user.passwordHash) {
       return res.status(401).json({ ok: false, error: 'Invalid credentials' });
     }
 

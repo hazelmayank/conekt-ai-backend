@@ -11,6 +11,12 @@ All protected endpoints require a JWT token in the Authorization header:
 Authorization: Bearer <jwt_token>
 ```
 
+## Hardware Authentication
+Hardware endpoints require an API key in the header:
+```
+X-API-Key: <api_secret_key>
+```
+
 ---
 
 ## 🔐 Authentication Flow
@@ -95,6 +101,7 @@ Authorization: Bearer <jwt_token>
   }
 }
 ```
+
 
 ---
 
@@ -500,6 +507,367 @@ Authorization: Bearer <jwt_token>
 
 ---
 
+## 👨‍💼 Admin APIs
+
+### 1. Admin Dashboard
+**Endpoint:** `GET /admin/dashboard`
+**Auth Required:** Yes (Admin)
+
+**Description:** Get comprehensive dashboard statistics for admin panel.
+
+**Response (200):**
+```json
+{
+  "campaigns": {
+    "total": 150,
+    "pending": 12,
+    "active": 45,
+    "expiring": 3
+  },
+  "trucks": {
+    "total": 8,
+    "online": 6,
+    "offline": 2
+  },
+  "assets": {
+    "total": 89
+  },
+  "payments": {
+    "total": 67
+  }
+}
+```
+
+### 2. Get All Campaigns (Admin)
+**Endpoint:** `GET /admin/campaigns`
+**Auth Required:** Yes (Admin)
+
+**Description:** Get campaigns for admin review with pagination and filtering.
+
+**Query Parameters:**
+- `status`: Filter by status (pending, approved, rejected, live, completed)
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10)
+
+**Response (200):**
+```json
+{
+  "campaigns": [
+    {
+      "_id": "campaign_id",
+      "status": "pending",
+      "package": "15",
+      "startDate": "2024-01-15T00:00:00.000Z",
+      "endDate": "2024-01-30T00:00:00.000Z",
+      "paymentStatus": "paid",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "advertiser": {
+        "_id": "user_id",
+        "phone": "+917651816966"
+      },
+      "route": {
+        "_id": "route_id",
+        "name": "Marine Drive Route"
+      },
+      "asset": {
+        "_id": "asset_id",
+        "url": "https://cloudinary_url/video.mp4",
+        "durationSec": 30
+      },
+      "truck": {
+        "_id": "truck_id",
+        "controllerId": "TRUCK_001",
+        "status": "online"
+      }
+    }
+  ],
+  "totalPages": 5,
+  "currentPage": 1,
+  "total": 45
+}
+```
+
+### 3. Approve Campaign
+**Endpoint:** `POST /admin/campaigns/:id/approve`
+**Auth Required:** Yes (Admin)
+
+**Description:** Approve a pending campaign with optional start date adjustment.
+
+**Request Body:**
+```json
+{
+  "startDate": "2024-01-15T00:00:00.000Z"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Campaign approved successfully"
+}
+```
+
+### 4. Reject Campaign
+**Endpoint:** `POST /admin/campaigns/:id/reject`
+**Auth Required:** Yes (Admin)
+
+**Description:** Reject a pending campaign with reason.
+
+**Request Body:**
+```json
+{
+  "reason": "Content does not meet advertising standards"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Campaign rejected successfully"
+}
+```
+
+### 5. Generate Playlist
+**Endpoint:** `POST /admin/playlists/generate`
+**Auth Required:** Yes (Admin)
+
+**Description:** Generate playlist for a truck based on active campaigns.
+
+**Request Body:**
+```json
+{
+  "truckId": "truck_id_here",
+  "date": "2024-01-15T00:00:00.000Z"
+}
+```
+
+**Response (200):**
+```json
+{
+  "id": "playlist_id",
+  "version": "v1640995200000",
+  "itemsCount": 5,
+  "truckId": "truck_id_here"
+}
+```
+
+### 6. Push Playlist to Truck
+**Endpoint:** `POST /admin/playlists/:id/push`
+**Auth Required:** Yes (Admin)
+
+**Description:** Push a generated playlist to the truck hardware.
+
+**Response (200):**
+```json
+{
+  "message": "Playlist pushed successfully"
+}
+```
+
+### 7. Get Truck Playlist (Admin)
+**Endpoint:** `GET /admin/trucks/:id/playlist`
+**Auth Required:** Yes (Admin)
+
+**Description:** Get current playlist for a specific truck.
+
+**Query Parameters:**
+- `date`: Date to get playlist for (default: today)
+
+**Response (200):**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "version": "v1640995200000",
+  "playlist": [
+    {
+      "id": "asset_id",
+      "type": "video",
+      "url": "https://cloudinary_url/video.mp4",
+      "checksum": "abc123",
+      "duration": 30,
+      "loop": false
+    }
+  ]
+}
+```
+
+### 8. Create Route
+**Endpoint:** `POST /admin/cities/:id/routes`
+**Auth Required:** Yes (Admin)
+
+**Description:** Create a new route and truck for a city.
+
+**Request Body:**
+```json
+{
+  "name": "New Route Name",
+  "description": "Route description"
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": "route_id",
+  "name": "New Route Name",
+  "truckId": "truck_id",
+  "controllerId": "TRUCK_1234567890"
+}
+```
+
+---
+
+## 🚛 Truck Management APIs
+
+### 1. Get All Trucks
+**Endpoint:** `GET /trucks`
+**Auth Required:** Yes (Admin)
+
+**Description:** Get list of all trucks with their status and route information.
+
+**Response (200):**
+```json
+[
+  {
+    "_id": "truck_id",
+    "controllerId": "TRUCK_001",
+    "status": "online",
+    "lastHeartbeatAt": "2024-01-15T10:30:00.000Z",
+    "uptimeSeconds": 3600,
+    "route": {
+      "_id": "route_id",
+      "name": "Marine Drive Route",
+      "city": "city_id"
+    }
+  }
+]
+```
+
+### 2. Get Truck Status
+**Endpoint:** `GET /trucks/:id/status`
+**Auth Required:** Yes (Admin)
+
+**Description:** Get detailed status information for a specific truck.
+
+**Response (200):**
+```json
+{
+  "id": "truck_id",
+  "controllerId": "TRUCK_001",
+  "status": "online",
+  "lastHeartbeatAt": "2024-01-15T10:30:00.000Z",
+  "uptimeSeconds": 3600,
+  "route": {
+    "_id": "route_id",
+    "name": "Marine Drive Route",
+    "city": "city_id"
+  }
+}
+```
+
+---
+
+## 🔧 Hardware APIs
+
+### 1. Truck Heartbeat
+**Endpoint:** `POST /hardware/:id/heartbeat`
+**Auth Required:** Hardware API Key
+
+**Description:** Hardware endpoint for trucks to send heartbeat and status updates.
+
+**Headers:**
+```
+X-API-Key: <api_secret_key>
+```
+
+**Request Body:**
+```json
+{
+  "device_id": "TRUCK_001",
+  "status": "online",
+  "uptime_seconds": 3600,
+  "last_ad_playback_timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+### 2. Get Truck Playlist (Hardware)
+**Endpoint:** `GET /hardware/:id/playlist`
+**Auth Required:** Hardware API Key
+
+**Description:** Hardware endpoint for trucks to fetch their daily playlist.
+
+**Headers:**
+```
+X-API-Key: <api_secret_key>
+```
+
+**Response (200):**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "version": "v1640995200000",
+  "playlist": [
+    {
+      "id": "asset_id",
+      "type": "video",
+      "url": "https://cloudinary_url/video.mp4",
+      "checksum": "abc123",
+      "duration": 30,
+      "loop": false
+    }
+  ]
+}
+```
+
+**Response (200) - No Playlist:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "version": "v0",
+  "playlist": []
+}
+```
+
+### 3. Get Truck Telemetry
+**Endpoint:** `GET /hardware/:id/telemetry`
+**Auth Required:** Hardware API Key
+
+**Description:** Hardware endpoint for monitoring truck status and performance.
+
+**Headers:**
+```
+X-API-Key: <api_secret_key>
+```
+
+**Response (200):**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "device": {
+    "id": "TRUCK_001",
+    "uptime_sec": 3600,
+    "status": "online",
+    "last_heartbeat": "2024-01-15T10:30:00.000Z"
+  },
+  "player": {
+    "status": "ready",
+    "playlist_version": "v1640995200000",
+    "last_ad_playback": "2024-01-15T10:25:00.000Z"
+  },
+  "errors": []
+}
+```
+
+---
+
 ## 🔄 Complete User Flow
 
 ### For New Advertisers:
@@ -528,6 +896,39 @@ Authorization: Bearer <jwt_token>
    GET /payments/:campaignId → Check payment status
    ```
 
+### For Admins:
+
+1. **Admin Dashboard Flow:**
+   ```
+   GET /admin/dashboard → View system statistics
+   GET /admin/campaigns?status=pending → Review pending campaigns
+   POST /admin/campaigns/:id/approve → Approve campaign
+   POST /admin/campaigns/:id/reject → Reject campaign
+   ```
+
+2. **Playlist Management Flow:**
+   ```
+   GET /trucks → View all trucks
+   GET /trucks/:id/status → Check truck status
+   POST /admin/playlists/generate → Generate playlist for truck
+   POST /admin/playlists/:id/push → Push playlist to truck
+   GET /admin/trucks/:id/playlist → Verify playlist
+   ```
+
+3. **Route Management Flow:**
+   ```
+   POST /admin/cities/:id/routes → Create new route and truck
+   ```
+
+### For Hardware/Trucks:
+
+1. **Hardware Communication Flow:**
+   ```
+   POST /hardware/:id/heartbeat → Send status updates
+   GET /hardware/:id/playlist → Fetch daily playlist
+   GET /hardware/:id/telemetry → Get system status
+   ```
+
 ### Package Options:
 - `"7"`: 7-day campaign
 - `"15"`: 15-day campaign  
@@ -553,6 +954,10 @@ Authorization: Bearer <jwt_token>
 4. **Video Requirements:** Only video files, max 100MB, automatically scaled to 1080p
 5. **Authentication:** JWT tokens expire in 7 days
 6. **Availability Logic:** System checks for overlapping campaigns and suggests earliest available date
+7. **Admin Access:** Admin users must be created manually in the database with `role: 'admin'`
+8. **Hardware API Key:** Set `API_SECRET_KEY` environment variable for hardware authentication
+9. **Playlist Generation:** Playlists are generated daily and pushed to trucks
+10. **Truck Status:** Trucks are marked offline if no heartbeat received for 5+ minutes
 
 ### Error Handling:
 All endpoints return consistent error format:
@@ -571,4 +976,5 @@ Common HTTP status codes:
 - `403`: Forbidden (account not verified)
 - `404`: Not Found
 - `500`: Internal Server Error
+
 

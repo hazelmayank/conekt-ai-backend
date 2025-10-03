@@ -57,16 +57,20 @@ router.post('/video-assets', authenticateToken, requireAdvertiser, upload.single
     // Upload to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'video',
-          folder: 'conekt/videos',
-          public_id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
+  {
+    resource_type: 'video',
+    folder: 'conekt/videos',
+    public_id: `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    transformation: [
+      { width: 1920, height: 1080, crop: "scale" } // force 1080p
+    ]
+  },
+  (error, result) => {
+    if (error) reject(error);
+    else resolve(result);
+  }
+);
+
       uploadStream.end(req.file.buffer);
     });
 
@@ -96,7 +100,7 @@ router.post('/video-assets', authenticateToken, requireAdvertiser, upload.single
   }
 });
 
-// Get user's assets
+// Get user's assets    
 router.get('/assets', authenticateToken, requireAdvertiser, async (req, res) => {
   try {
     const assets = await Asset.find({ owner: req.user._id })

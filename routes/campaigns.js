@@ -16,7 +16,7 @@ router.post('/', authenticateToken, requireAdvertiser, validateRequest(schemas.c
     const { routeId, assetId, package, startDate } = req.body;
 
       const dayOfMonth = moment(startDate).date();
-    if (![1, 15].includes(dayOfMonth)) {
+    if (![1, 15, 16 ].includes(dayOfMonth)) {
       return res.status(400).json({ error: 'Start date must be either 1st or 15th of the month' });
     }
     // Verify asset ownership

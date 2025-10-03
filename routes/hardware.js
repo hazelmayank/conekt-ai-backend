@@ -54,9 +54,9 @@ router.post('/:id/heartbeat', authenticateHardware, validateRequest(schemas.truc
 router.get('/:id/playlist', authenticateHardware, async (req, res) => {
   try {
     const { id } = req.params;
-
+   const { date }=req.body;
     // Compute *UTC* day window for "today"
-    const now = new Date();
+    const now = new Datenow
     const startUtc = new Date(Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),

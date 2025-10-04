@@ -71,7 +71,12 @@ const schemas = {
     device_id: Joi.string().required(),
     status: Joi.string().valid('online', 'offline').required(),
     uptime_seconds: Joi.number().min(0).required(),
-    last_ad_playback_timestamp: Joi.date().optional()
+    last_ad_playback_timestamp: Joi.date().optional(),
+    gps_coordinates: Joi.object({
+      latitude: Joi.number().min(-90).max(90).required(),
+      longitude: Joi.number().min(-180).max(180).required(),
+      timestamp: Joi.date().optional()
+    }).optional()
   })
 };
 

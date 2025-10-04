@@ -181,7 +181,7 @@ X-API-Key: <api_secret_key>
 **Endpoint:** `POST /availability/check`
 **Auth Required:** Yes (Advertiser)
 
-**Description:** Check if advertising slots are available for a specific route, package duration, and start date.
+**Description:** Check if advertising slots are available for a specific route, package duration, and start date. Start dates can be past, present, or future dates.
 
 **Request Body:**
 ```json
@@ -312,7 +312,7 @@ X-API-Key: <api_secret_key>
 **Endpoint:** `POST /campaigns`
 **Auth Required:** Yes (Advertiser)
 
-**Description:** Create a new advertising campaign. Start date must be 1st or 15th of the month.
+**Description:** Create a new advertising campaign. Start date must be 1st or 15th of the month, but can be any past, present, or future date.
 
 **Request Body:**
 ```json
@@ -613,7 +613,7 @@ X-API-Key: <api_secret_key>
 **Endpoint:** `POST /admin/campaigns/:id/approve`
 **Auth Required:** Yes (Admin)
 
-**Description:** Approve a pending campaign with optional start date adjustment.
+**Description:** Approve a pending campaign with optional start date adjustment. Start date can be past, present, or future dates.
 
 **Request Body:**
 ```json
@@ -992,7 +992,7 @@ X-API-Key: <api_secret_key>
 ### Important Notes:
 
 1. **Phone Number Format:** Must be in E.164 format (`+91XXXXXXXXXX`)
-2. **Start Dates:** Campaigns can only start on 1st or 15th of the month
+2. **Start Dates:** Campaigns can only start on 1st or 15th of the month, but can be any past, present, or future date.
 3. **Route Capacity:** Maximum 7 concurrent campaigns per route
 4. **Video Requirements:** Only video files, max 100MB, automatically scaled to 1080p
 5. **Authentication:** JWT tokens expire in 7 days

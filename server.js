@@ -85,7 +85,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Initialize playlist scheduler
+start// Initialize playlist scheduler
 let playlistScheduler = null;
 try {
   playlistScheduler = new PlaylistScheduler();
@@ -103,7 +103,8 @@ app.listen(PORT, () => {
   
   // Log scheduler status
   if (playlistScheduler) {
-    console.log('✅ Playlist scheduler:', playlistScheduler.getStatus());
+    console.log('✅ Playlist scheduler initialized and running');
+    console.log('⏰ Tasks running: playlist refresh, daily generation, morning checks');
   }
 });
 

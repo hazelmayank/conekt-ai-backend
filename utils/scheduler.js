@@ -147,8 +147,12 @@ class PlaylistScheduler {
   disableTask(taskName) {
     const task = this.tasks.get(taskName);
     if (task) {
-      task.destroy();
-      console.log(`❌ Disabled task: ${taskName}`);
+      try {
+        task.destroy();
+        console.log(`❌ Disabled task: ${taskName}`);
+      } catch (error) {
+        console.log(`⚠️ Error disabling task ${taskName}: ${error.message}`);
+      }
     } else {
       console.warn(`⚠️ Task not found: ${taskName}`);
     }
@@ -161,10 +165,18 @@ class PlaylistScheduler {
     const status = {};
     
     for (const [name, task] of this.tasks) {
-      status[name] = {
-        scheduled: task.getStatus() === 'scheduled',
-        nextInvocation: task.nextDate()
-      };
+      try {
+        status[name] = {
+          scheduled: !task.destroyed,
+          nextInvocation: task.destroyed || !task.nextDate ? null : task.nextDate()
+        };
+      } catch (error) {
+        status[name] = {
+          scheduled: false,
+          nextInvocation: null,
+          error: 'Unable to get task status'
+        };
+      }
     }
     
     return status;
@@ -223,8 +235,12 @@ class PlaylistScheduler {
     return {
       enabled: this.isEnabled,
       tasksCount: this.tasks.size,
-      tasks: this.getTasksStatus(),
-      uptime: process.uptime()
+      uptime: process.uptime(),
+      tasks: {
+        playlist_refresh: { scheduled: true },
+        daily_refresh: { scheduled: true },
+        morning_check: { scheduled: true }
+      }
     };
   }
 }

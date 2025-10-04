@@ -6,7 +6,10 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
-require('./config/cloudinary'); 
+require('./config/cloudinary');
+
+// Import playlist scheduler
+const PlaylistScheduler = require('./utils/scheduler'); 
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -82,9 +85,26 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Initialize playlist scheduler
+let playlistScheduler = null;
+try {
+  playlistScheduler = new PlaylistScheduler();
+  console.log('🎵 Playlist scheduler initialized');
+} catch (error) {
+  console.error('❌ Failed to initialize playlist scheduler:', error);
+}
+
+// Make scheduler available globally
+global.playlistScheduler = playlistScheduler;
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Log scheduler status
+  if (playlistScheduler) {
+    console.log('✅ Playlist scheduler:', playlistScheduler.getStatus());
+  }
 });
 
-module.exports = app;
+module.exports = { app, playlistScheduler };

@@ -8,6 +8,7 @@ const Asset = require('../models/Asset');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { validateRequest, schemas } = require('../middleware/validation');
 const { checkAvailability } = require('../utils/availability');
+const playlistUtils = require('../utils/playlist');
 const moment = require('moment');
 
 const router = express.Router();
@@ -77,6 +78,20 @@ router.post('/campaigns/:id/approve', authenticateToken, requireAdmin, validateR
 
     await campaign.save();
 
+    // Auto-regenerate playlists for this campaign
+    try {
+      const playlistUtils = require('../utils/playlist');
+      const playlistResult = await playlistUtils.regeneratePlaylistForCampaign(campaign._id);
+      
+      if (playlistResult.success) {
+        console.log(`Playlists auto-regenerated for campaign ${campaign._id}:`, playlistResult.summary);
+      } else {
+        console.error(`Failed to auto-regenerate playlists for campaign ${campaign._id}:`, playlistResult.error);
+      }
+    } catch (playlistError) {
+      console.error('Error auto-regenerating playlists:', playlistError);
+    }
+
     res.json({ message: 'Campaign approved successfully' });
   } catch (error) {
     console.error('Approve campaign error:', error);
@@ -123,72 +138,56 @@ router.post('/playlists/generate', authenticateToken, requireAdmin, async (req, 
     }
 
     const targetDate = date ? new Date(date) : new Date();
-    console.log(`Generating playlist for truck ${truckId} on date ${targetDate}`);
+    const playlistUtils = require('../utils/playlist');
+    const result = await playlistUtils.generatePlaylistForTruck(truckId, targetDate);
 
-    // Verify truck exists
-    const truck = await Truck.findById(truckId);
-    if (!truck) {
-      return res.status(404).json({ error: 'Truck not found' });
+    if (!result.success) {
+      return res.status(400).json({ 
+        error: 'Failed to generate playlist',
+        details: result.error 
+      });
     }
-
-    // Get active campaigns for this truck on the target date
-    const campaigns = await Campaign.find({
-      truck: truckId,
-      status: 'approved',
-      startDate: { $lte: targetDate },
-      endDate: { $gte: targetDate }
-    }).populate('asset');
-
-    console.log(`Found ${campaigns.length} active campaigns for truck ${truckId}`);
-
-    if (campaigns.length === 0) {
-      return res.status(400).json({ error: 'No active campaigns for this truck' });
-    }
-
-    // Create playlist items
-    const playlistItems = campaigns.map(campaign => {
-      if (!campaign.asset) {
-        throw new Error(`Campaign ${campaign._id} has no asset`);
-      }
-      
-      return {
-        id: campaign.asset._id.toString(),
-        type: 'video',
-        url: campaign.asset.url,
-        checksum: campaign.asset.checksum || 'no-checksum',
-        duration: campaign.asset.durationSec,
-        loop: false
-      };
-    });
-
-    // Generate version
-    const version = `v${Date.now()}`;
-
-    // Create or update playlist
-    const playlist = await Playlist.findOneAndUpdate(
-      { truck: truckId, date: targetDate },
-      {
-        truck: truckId,
-        date: targetDate,
-        version,
-        items: playlistItems,
-        pushStatus: 'pending'
-      },
-      { upsert: true, new: true }
-    );
-
-    console.log(`Playlist generated successfully: ${playlist._id}`);
 
     res.json({
-      id: playlist._id,
-      version: playlist.version,
-      itemsCount: playlist.items.length,
-      truckId: playlist.truck
+      id: result.playlist._id,
+      version: result.version,
+      itemsCount: result.itemsCount,
+      truckId: truckId
     });
   } catch (error) {
     console.error('Generate playlist error:', error);
     res.status(500).json({ 
       error: 'Failed to generate playlist',
+      details: error.message 
+    });
+  }
+});
+
+// Generate playlists for all trucks
+router.post('/playlists/generate-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { date } = req.body;
+    const targetDate = date ? new Date(date) : new Date();
+    
+    const playlistUtils = require('../utils/playlist');
+    const result = await playlistUtils.generatePlaylistsForAllTrucks(targetDate);
+
+    if (!result.success) {
+      return res.status(500).json({ 
+        error: 'Failed to generate playlists',
+        details: result.error 
+      });
+    }
+
+    res.json({
+      message: 'Playlists generated for all trucks',
+      summary: result.summary,
+      results: result.results
+    });
+  } catch (error) {
+    console.error('Generate all playlists error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate playlists for all trucks',
       details: error.message 
     });
   }
@@ -341,6 +340,93 @@ router.post('/cities/:id/routes', authenticateToken, requireAdmin, async (req, r
   } catch (error) {
     console.error('Create route error:', error);
     res.status(500).json({ error: 'Failed to create route' });
+  }
+});
+
+// Get playlist statistics
+router.get('/playlists/stats', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const stats = await playlistUtils.getPlaylistStats();
+    
+    if (!stats.success) {
+      return res.status(500).json({ 
+        error: 'Failed to get playlist stats',
+        details: stats.error 
+      });
+    }
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Get playlist stats error:', error);
+    res.status(500).json({ error: 'Failed to get playlist statistics' });
+  }
+});
+
+// Manual playlist refresh for all trucks
+router.post('/playlists/refresh-all', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { date } = req.body;
+    const targetDate = date ? new Date(date) : new Date();
+    
+    const result = await playlistUtils.generatePlaylistsForAllTrucks(targetDate);
+    
+    if (!result.success) {
+      return res.status(500).json({ 
+        error: 'Failed to refresh playlists',
+        details: result.error 
+      });
+    }
+
+    res.json({
+      message: 'Playlists refreshed successfully',
+      timestamp: new Date().toISOString(),
+      summary: result.summary,
+      results: result.results
+    });
+  } catch (error) {
+    console.error('Manual playlist refresh error:', error);
+    res.status(500).json({ error: 'Failed to manually refresh playlists' });
+  }
+});
+
+// Get scheduler status
+router.get('/scheduler/status', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    if (!global.playlistScheduler) {
+      return res.json({
+        enabled: false,
+        message: 'Scheduler not initialized'
+      });
+    }
+
+    const status = global.playlistScheduler.getStatus();
+    res.json(status);
+  } catch (error) {
+    console.error('Get scheduler status error:', error);
+    res.status(500).json({ error: 'Failed to get scheduler status' });
+  }
+});
+
+// Trigger manual playlist refresh via scheduler
+router.post('/scheduler/refresh', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { date } = req.body;
+    
+    if (!global.playlistScheduler) {
+      return res.status(500).json({ error: 'Scheduler not available' });
+    }
+
+    const targetDate = date ? new Date(date) : new Date();
+    const result = await global.playlistScheduler.triggerManualRefresh(targetDate);
+    
+    res.json({
+      message: result.success ? 'Manual refresh triggered successfully' : 'Manual refresh failed',
+      timestamp: new Date().toISOString(),
+      result
+    });
+  } catch (error) {
+    console.error('Trigger manual playback error:', error);
+    res.status(500).json({ error: 'Failed to trigger manual refresh' });
   }
 });
 

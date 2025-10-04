@@ -6,20 +6,17 @@ const { validateRequest, schemas } = require('../middleware/validation');
 
 const router = express.Router();
 
-// Password-based registration (advertiser) - sends OTP for verification
+// OTP-based registration - sends OTP for verification
 router.post('/register', validateRequest(schemas.register), async (req, res) => {
   try {
-    const { role, name, phone, password } = req.body;
+    const { role, name, phone } = req.body;
 
     const existing = await User.findOne({ phone });
     if (existing) {
       return res.status(400).json({ ok: false, error: 'User already exists' });
     }
-
-    const bcrypt = require('bcryptjs');
-    const passwordHash = await bcrypt.hash(password, 10);
     
-    const user = await User.create({ phone, name, passwordHash, role: role || 'advertiser', isVerified: false });
+    const user = await User.create({ phone, name, role: role || 'advertiser', isVerified: false });
     
     // Send OTP for registration verification
     const result = await sendOTP(phone);
@@ -64,24 +61,48 @@ router.post('/register/verify', validateRequest(schemas.verifyRegistration), asy
   }
 });
 
-// Password-based login (advertiser)
+// OTP-based login
 router.post('/login', validateRequest(schemas.login), async (req, res) => {
   try {
-    const { phone, password } = req.body;
+    const { phone } = req.body;
 
     const user = await User.findOne({ phone });
-    if (!user  || !user.passwordHash) {
-      return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ ok: false, error: 'User not found' });
     }
 
     if (!user.isVerified) {
       return res.status(403).json({ ok: false, error: 'Account not verified. Please complete OTP verification.' });
     }
 
-    const bcrypt = require('bcryptjs');
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    // Send OTP for login
+    const result = await sendOTP(phone);
+    
+    return res.json({ ok: true, message: 'OTP sent for login', data: result });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to send OTP' });
+  }
+});
+
+// Verify OTP for login
+router.post('/login/verify', validateRequest(schemas.verifyOTP), async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    
+    const user = await User.findOne({ phone });
+    if (!user) {
+      return res.status(404).json({ ok: false, error: 'User not found' });
+    }
+
+    if (!user.isVerified) {
+      return res.status(403).json({ ok: false, error: 'Account not verified' });
+    }
+
+    // Verify OTP using Twilio Verify
+    const { valid } = await verifyOTP(phone, otp);
     if (!valid) {
-      return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+      return res.status(401).json({ ok: false, error: 'Invalid code' });
     }
 
     user.lastLogin = new Date();
@@ -95,8 +116,8 @@ router.post('/login', validateRequest(schemas.login), async (req, res) => {
 
     return res.json({ ok: true, token, user: { id: user._id, role: user.role, phone: user.phone, name: user.name } });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ ok: false, error: 'Failed to login' });
+    console.error('Login verify error:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to verify login' });
   }
 });
 

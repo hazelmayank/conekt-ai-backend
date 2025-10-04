@@ -21,17 +21,16 @@ X-API-Key: <api_secret_key>
 
 ## 🔐 Authentication Flow
 
-### 1. Registration (Advertisers)
+### 1. Registration (Advertisers & Admins)
 **Endpoint:** `POST /auth/register`
 
-**Description:** Register a new advertiser account with name, phone, and password. Sends OTP for verification.
+**Description:** Register a new user account with name and phone. Sends OTP for verification.
 
 **Request Body:**
 ```json
 {
   "name": "John Doe",
   "phone": "+917651816966",
-  "password": "securepassword123",
   "role": "advertiser"
 }
 ```
@@ -75,16 +74,39 @@ X-API-Key: <api_secret_key>
 }
 ```
 
-### 3. Login (Advertisers)
+### 3. Login (OTP-based)
 **Endpoint:** `POST /auth/login`
 
-**Description:** Login with phone number and password for advertisers.
+**Description:** Login with phone number. Sends OTP for verification.
+
+**Request Body:**
+```json
+{
+  "phone": "+917651816966"
+}
+```
+
+**Response (200):**
+```json
+{
+  "ok": true,
+  "message": "OTP sent for login",
+  "data": {
+    "sid": "verification_sid_from_twilio"
+  }
+}
+```
+
+### 4. Verify Login OTP
+**Endpoint:** `POST /auth/login/verify`
+
+**Description:** Verify the OTP sent during login to complete authentication.
 
 **Request Body:**
 ```json
 {
   "phone": "+917651816966",
-  "password": "securepassword123"
+  "otp": "123456"
 }
 ```
 
@@ -870,7 +892,7 @@ X-API-Key: <api_secret_key>
 
 ## 🔄 Complete User Flow
 
-### For New Advertisers:
+### For New Users (Advertisers & Admins):
 
 1. **Registration Flow:**
    ```
@@ -878,7 +900,13 @@ X-API-Key: <api_secret_key>
    POST /auth/register/verify → Account activated + JWT token
    ```
 
-2. **Campaign Creation Flow:**
+2. **Login Flow:**
+   ```
+   POST /auth/login → OTP sent
+   POST /auth/login/verify → Authentication complete + JWT token
+   ```
+
+2. **Campaign Creation Flow (Advertisers):**
    ```
    GET /cities → Select city
    GET /cities/:id/routes → Select route  
@@ -889,7 +917,7 @@ X-API-Key: <api_secret_key>
    POST /payments/verify → Complete payment
    ```
 
-3. **Campaign Management:**
+3. **Campaign Management (Advertisers):**
    ```
    GET /campaigns/mine → View all campaigns
    GET /campaigns/:id → View specific campaign

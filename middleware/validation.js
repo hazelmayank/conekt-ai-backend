@@ -22,8 +22,7 @@ const schemas = {
   register: Joi.object({
     role: Joi.string().valid('advertiser', 'admin').default('advertiser'),
     name: Joi.string().min(2).max(80).required(),
-    phone: Joi.string().pattern(/^\+91[6-9]\d{9}$/).required(),
-    password: Joi.string().min(6).max(128).required()
+    phone: Joi.string().pattern(/^\+91[6-9]\d{9}$/).required()
   }),
   
   verifyRegistration: Joi.object({
@@ -32,8 +31,7 @@ const schemas = {
   }),
   
   login: Joi.object({
-    phone: Joi.string().pattern(/^\+91[6-9]\d{9}$/).required(),
-    password: Joi.string().min(6).max(128).required()
+    phone: Joi.string().pattern(/^\+91[6-9]\d{9}$/).required()
   }),
   
   verifyOTP: Joi.object({

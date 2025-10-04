@@ -50,24 +50,26 @@ async function testAuthentication() {
   console.log('2️⃣ Testing Authentication Flow...');
   
   try {
-    // Send OTP
-    console.log('📤 Sending OTP...');
-    const otpResponse = await axios.post(`${BASE_URL}/api/auth/otp/send`, {
-      phone: testPhone
+    // Register new user
+    console.log('📝 Registering user...');
+    const registerResponse = await axios.post(`${BASE_URL}/api/auth/register`, {
+      name: 'Test User',
+      phone: testPhone,
+      role: 'advertiser'
     });
-    console.log('✅ OTP Sent:', otpResponse.data);
+    console.log('✅ Registration:', registerResponse.data);
     
     // Note: In development mode, use the dev code '000000'
     // In production, check your phone for the actual OTP
     const otpCode = '000000'; // Use actual OTP from SMS in production
     
-    // Verify OTP
-    console.log('🔐 Verifying OTP...');
-    const verifyResponse = await axios.post(`${BASE_URL}/api/auth/otp/verify`, {
+    // Verify registration OTP
+    console.log('🔐 Verifying registration OTP...');
+    const verifyResponse = await axios.post(`${BASE_URL}/api/auth/register/verify`, {
       phone: testPhone,
       otp: otpCode
     });
-    console.log('✅ OTP Verified:', verifyResponse.data);
+    console.log('✅ Registration Verified:', verifyResponse.data);
     authToken = verifyResponse.data.token;
     
   } catch (error) {
@@ -124,6 +126,20 @@ async function testAdvertiserAPIs() {
     const profileResponse = await axios.get(`${BASE_URL}/api/profile`, { headers });
     console.log('✅ User Profile:', profileResponse.data);
     
+    // Test OTP-based login for existing user
+    console.log('🔐 Testing OTP-based login...');
+    const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
+      phone: testPhone
+    });
+    console.log('✅ Login OTP Sent:', loginResponse.data);
+    
+    // Verify login OTP
+    const loginVerifyResponse = await axios.post(`${BASE_URL}/api/auth/login/verify`, {
+      phone: testPhone,
+      otp: '000000'
+    });
+    console.log('✅ Login Verified:', loginVerifyResponse.data);
+    
   } catch (error) {
     console.error('❌ Advertiser API test failed:', error.response?.data || error.message);
   }
@@ -134,19 +150,22 @@ async function testAdminAPIs() {
   console.log('4️⃣ Testing Admin APIs...');
   
   try {
-    // Login as admin
-    console.log('👨‍💼 Logging in as admin...');
-    const adminOtpResponse = await axios.post(`${BASE_URL}/api/auth/otp/send`, {
-      phone: adminPhone
+    // Register admin user
+    console.log('👨‍💼 Registering admin user...');
+    const adminRegisterResponse = await axios.post(`${BASE_URL}/api/auth/register`, {
+      name: 'Admin User',
+      phone: adminPhone,
+      role: 'admin'
     });
-    console.log('✅ Admin OTP Sent:', adminOtpResponse.data);
+    console.log('✅ Admin Registration:', adminRegisterResponse.data);
     
-    // Verify admin OTP
-    const adminVerifyResponse = await axios.post(`${BASE_URL}/api/auth/otp/verify`, {
+    // Verify admin registration OTP
+    console.log('🔐 Verifying admin registration OTP...');
+    const adminVerifyResponse = await axios.post(`${BASE_URL}/api/auth/register/verify`, {
       phone: adminPhone,
       otp: '000000' // Use actual OTP in production
     });
-    console.log('✅ Admin OTP Verified:', adminVerifyResponse.data);
+    console.log('✅ Admin Registration Verified:', adminVerifyResponse.data);
     adminToken = adminVerifyResponse.data.token;
     
     if (!adminToken) {
@@ -170,6 +189,20 @@ async function testAdminAPIs() {
     console.log('🚛 Getting trucks...');
     const trucksResponse = await axios.get(`${BASE_URL}/api/trucks`, { headers: adminHeaders });
     console.log('✅ Trucks:', trucksResponse.data);
+    
+    // Test OTP-based login for admin
+    console.log('🔐 Testing admin OTP-based login...');
+    const adminLoginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
+      phone: adminPhone
+    });
+    console.log('✅ Admin Login OTP Sent:', adminLoginResponse.data);
+    
+    // Verify admin login OTP
+    const adminLoginVerifyResponse = await axios.post(`${BASE_URL}/api/auth/login/verify`, {
+      phone: adminPhone,
+      otp: '000000'
+    });
+    console.log('✅ Admin Login Verified:', adminLoginVerifyResponse.data);
     
   } catch (error) {
     console.error('❌ Admin API test failed:', error.response?.data || error.message);

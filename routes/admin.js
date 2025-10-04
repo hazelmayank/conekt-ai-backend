@@ -399,8 +399,13 @@ router.get('/scheduler/status', authenticateToken, requireAdmin, async (req, res
       });
     }
 
-    const status = global.playlistScheduler.getStatus();
-    res.json(status);
+    const basicStatus = {
+      enabled: global.playlistScheduler ? global.playlistScheduler.isEnabled : false,
+      tasksCount: global.playlistScheduler ? global.playlistScheduler.tasks.size : 0,
+      uptime: process.uptime(),
+      message: 'Scheduler running with auto-refresh, daily generation, and morning checks'
+    };
+    res.json(basicStatus);
   } catch (error) {
     console.error('Get scheduler status error:', error);
     res.status(500).json({ error: 'Failed to get scheduler status' });

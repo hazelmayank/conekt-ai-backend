@@ -55,13 +55,18 @@ A comprehensive backend system for the Conekt digital outdoor advertising platfo
 
 ### Admin APIs
 - `GET /api/admin/campaigns` - Get campaigns for review
-- `POST /api/admin/campaigns/:id/approve` - Approve campaign
+- `POST /api/admin/campaigns/:id/approve` - Approve campaign (auto-regenerates playlists)
 - `POST /api/admin/campaigns/:id/reject` - Reject campaign
-- `POST /api/admin/playlists/generate` - Generate playlist
+- `POST /api/admin/playlists/generate` - Generate playlist for specific truck
+- `POST /api/admin/playlists/generate-all` - Generate playlists for all trucks
 - `POST /api/admin/playlists/:id/push` - Push playlist to truck
 - `GET /api/admin/trucks/:id/playlist` - Get truck playlist
 - `GET /api/admin/dashboard` - Get dashboard statistics
 - `POST /api/admin/cities/:id/routes` - Create route for city
+- `GET /api/admin/playlists/stats` - Get playlist statistics
+- `POST /api/admin/playlists/refresh-all` - Manual playlist refresh
+- `GET /api/admin/scheduler/status` - Get scheduler status
+- `POST /api/admin/scheduler/refresh` - Trigger manual refresh
 
 ### Truck APIs
 - `GET /api/trucks` - Get all trucks (admin)
@@ -195,6 +200,46 @@ The API follows RESTful conventions with JSON responses. All endpoints require a
 - 403: Forbidden (insufficient permissions)
 - 404: Not Found
 - 500: Internal Server Error
+
+## 🎵 Real-time Playlist Updates
+
+The system now supports automatic playlist updates for live video streaming:
+
+### Automatic Updates
+- **Campaign Approval**: When admin approves a campaign, playlists are automatically regenerated for affected trucks
+- **Scheduled Refresh**: Playlists are refreshed every 2 hours to ensure latest content
+- **Daily Generation**: Tomorrow's playlists are pre-generated at 11 PM daily  
+- **Morning Check**: At 6 AM, system verifies missing playlists and generates them
+
+### Manual Controls
+- Generate playlists for all trucks: `POST /api/admin/playlists/refresh-all`
+- Monitor scheduler status: `GET /api/admin/scheduler/status`
+- Trigger manual refresh: `POST /api/admin/scheduler/refresh`
+
+### Environment Variables
+```env
+ENABLE_PLAYLIST_SCHEDULER=true  # Enable/disable auto-scheduling
+```
+
+## 🧪 Testing Playlist Updates
+
+Test the playlist auto-update functionality:
+```bash
+node test-playlist-updates.js
+```
+
+This will verify:
+- ✅ Playlist generation works correctly
+- ✅ Auto-regeneration on campaign approval
+- ✅ Scheduler is running properly
+
+## 📈 Workflow
+
+1. **Upload Video**: Advertiser uploads content via `/api/uploads/video-assets`
+2. **Create Campaign**: Campaign created via `/api/campaigns`
+3. **Admin Approval**: Admin approves via `/api/admin/campaigns/:id/approve`
+4. **Auto-Regeneration**: Playlists automatically update for affected trucks
+5. **Live Streaming**: Trucks immediately receive updated playlists
 
 ## License
 

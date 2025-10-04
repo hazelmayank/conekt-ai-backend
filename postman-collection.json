@@ -1,21 +1,21 @@
 {
   "info": {
-    "name": "Conekt API Collection",
-    "description": "Complete API collection for Conekt MVP",
+    "name": "Conekt AI - Hardware Endpoints",
+    "description": "Hardware endpoints for truck communication",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
-      "key": "baseUrl",
-      "value": "http://localhost:3000"
+      "key": "base_url",
+      "value": "http://localhost:3001/api"
     },
     {
-      "key": "authToken",
-      "value": ""
+      "key": "api_secret_key",
+      "value": "your_api_secret_key_here"
     },
     {
-      "key": "adminToken",
-      "value": ""
+      "key": "truck_id",
+      "value": "truck_id_here"
     }
   ],
   "item": [
@@ -23,222 +23,67 @@
       "name": "Health Check",
       "request": {
         "method": "GET",
-        "header": [],
         "url": {
-          "raw": "{{baseUrl}}/health",
-          "host": ["{{baseUrl}}"],
-          "path": ["health"]
-        }
+          "raw": "http://localhost:3001/health"
+        },
+        "description": "Check server health status."
       }
     },
     {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Send OTP",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/otp/send",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "otp", "send"]
-            }
+      "name": "Truck Heartbeat",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_secret_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"device_id\": \"CTRL-TRUCK-001\",\n  \"status\": \"online\",\n  \"uptime_seconds\": 1860,\n  \"last_ad_playback_timestamp\": \"2025-09-29T06:35:40.000Z\",\n  \"gps_coordinates\": {\n    \"latitude\": 19.0760,\n    \"longitude\": 72.8777,\n    \"timestamp\": \"2025-09-29T06:35:40.000Z\"\n  }\n}"
         },
-        {
-          "name": "Verify OTP",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"000000\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/otp/verify",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "otp", "verify"]
-            }
-          }
-        }
-      ]
+        "url": {
+          "raw": "{{base_url}}/hardware/{{truck_id}}/heartbeat"
+        },
+        "description": "Send heartbeat from truck hardware to update status."
+      }
     },
     {
-      "name": "Advertiser APIs",
-      "item": [
-        {
-          "name": "Get Cities",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/cities",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cities"]
-            }
+      "name": "Get Truck Playlist",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_secret_key}}"
           }
+        ],
+        "url": {
+          "raw": "{{base_url}}/hardware/{{truck_id}}/playlist"
         },
-        {
-          "name": "Get Routes",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/cities/:cityId/routes",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "cities", ":cityId", "routes"],
-              "variable": [
-                {
-                  "key": "cityId",
-                  "value": "CITY_ID_HERE"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Check Availability",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"routeId\": \"ROUTE_ID_HERE\",\n  \"package\": \"7\",\n  \"startDate\": \"2025-01-20T00:00:00Z\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/availability/check",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "availability", "check"]
-            }
-          }
-        }
-      ]
+        "description": "Get playlist for truck hardware (returns today's playlist)."
+      }
     },
     {
-      "name": "Admin APIs",
-      "item": [
-        {
-          "name": "Admin Dashboard",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/dashboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "dashboard"]
-            }
+      "name": "Get Truck Telemetry",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{api_secret_key}}"
           }
+        ],
+        "url": {
+          "raw": "{{base_url}}/hardware/{{truck_id}}/telemetry"
         },
-        {
-          "name": "Get Pending Campaigns",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/campaigns?status=pending",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "campaigns"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "pending"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Hardware APIs",
-      "item": [
-        {
-          "name": "Truck Heartbeat",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "your-api-secret-key-for-hardware-auth"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"device_id\": \"TRUCK_001\",\n  \"status\": \"online\",\n  \"uptime_seconds\": 3600,\n  \"last_ad_playback_timestamp\": \"2025-01-18T12:00:00Z\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/hardware/TRUCK_001/heartbeat",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "hardware", "TRUCK_001", "heartbeat"]
-            }
-          }
-        },
-        {
-          "name": "Get Playlist",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-api-key",
-                "value": "your-api-secret-key-for-hardware-auth"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/hardware/TRUCK_001/playlist",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "hardware", "TRUCK_001", "playlist"]
-            }
-          }
-        }
-      ]
+        "description": "Get telemetry data for truck hardware monitoring."
+      }
     }
   ]
 }

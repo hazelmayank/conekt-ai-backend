@@ -795,7 +795,7 @@ X-API-Key: <api_secret_key>
 **Endpoint:** `POST /hardware/:id/heartbeat`
 **Auth Required:** Hardware API Key
 
-**Description:** Hardware endpoint for trucks to send heartbeat and status updates.
+**Description:** Hardware endpoint for trucks to send heartbeat and status updates. GPS coordinates are optional and can be included to track truck location.
 
 **Headers:**
 ```
@@ -808,9 +808,24 @@ X-API-Key: <api_secret_key>
   "device_id": "TRUCK_001",
   "status": "online",
   "uptime_seconds": 3600,
-  "last_ad_playback_timestamp": "2024-01-15T10:30:00.000Z"
+  "last_ad_playback_timestamp": "2024-01-15T10:30:00.000Z",
+  "gps_coordinates": {
+    "latitude": 19.0760,
+    "longitude": 72.8777,
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
 }
 ```
+
+**Field Descriptions:**
+- `device_id` (string, required): Truck controller identifier
+- `status` (string, required): Current status ("online" or "offline")
+- `uptime_seconds` (number, required): Uptime in seconds since last reboot
+- `last_ad_playback_timestamp` (ISO date, optional): When last ad was played
+- `gps_coordinates` (object, optional): GPS location data
+  - `latitude` (number, required if gps_coordinates provided): Latitude (-90 to 90)
+  - `longitude` (number, required if gps_coordinates provided): Longitude (-180 to 180)
+  - `timestamp` (ISO date, optional): When GPS reading was taken (defaults to request time)
 
 **Response (200):**
 ```json

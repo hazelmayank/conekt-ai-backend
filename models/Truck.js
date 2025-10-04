@@ -27,6 +27,33 @@ const truckSchema = new mongoose.Schema({
   lastAdPlaybackTimestamp: {
     type: Date
   },
+  gpsCoordinates: {
+    latitude: {
+      type: Number,
+      min: -90,
+      max: 90,
+      validate: {
+        validator: function(v) {
+          return v === null || (typeof v === 'number' && !isNaN(v));
+        },
+        message: 'Latitude must be a valid number between -90 and 90'
+      }
+    },
+    longitude: {
+      type: Number,
+      min: -180,
+      max: 180,
+      validate: {
+        validator: function(v) {
+          return v === null || (typeof v === 'number' && !isNaN(v));
+        },
+        message: 'Longitude must be a valid number between -180 and 180'
+      }
+    },
+    timestamp: {
+      type: Date
+    }
+  },
   isActive: {
     type: Boolean,
     default: true

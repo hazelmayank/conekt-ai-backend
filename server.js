@@ -85,7 +85,6 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-start// Initialize playlist scheduler
 let playlistScheduler = null;
 try {
   playlistScheduler = new PlaylistScheduler();

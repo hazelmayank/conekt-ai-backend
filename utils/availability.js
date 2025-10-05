@@ -4,7 +4,7 @@ const moment = require('moment');
 const checkAvailability = async (routeId, package, startDate) => {
   try {
     const packageDays = parseInt(package);
-    const endDate = moment(startDate).add(packageDays, 'days').toDate()-1;
+    const endDate = moment(startDate).add(packageDays, 'days').toDate();
 
     // Get all active campaigns for this route
     const activeCampaigns = await Campaign.find({

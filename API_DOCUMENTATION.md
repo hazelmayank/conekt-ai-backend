@@ -713,7 +713,66 @@ X-API-Key: <api_secret_key>
 }
 ```
 
-### 8. Create Route
+### 9. Delete All Campaigns on Route (with Date Range)
+**Endpoint:** `DELETE /admin/routes/:routeId/campaigns`
+**Auth Required:** Yes (Admin)
+
+**Description:** Delete all campaigns associated with a specific route, optionally within a specific date range. This is useful for route cleanup and management.
+
+**Request Body (Optional):**
+```json
+{
+  "startDate": "2025-10-01T00:00:00.000Z",
+  "endDate": "2025-10-15T23:59:59.999Z"
+}
+```
+
+**Response (200) - Campaigns Deleted with Date Range:**
+```json
+{
+  "message": "Successfully deleted 3 campaigns from route between 2025-10-01T00:00:00.000Z and 2025-10-15T23:59:59.999Z",
+  "deletedCount": 3,
+  "routeName": "Marine Drive Route",
+  "routeId": "route_id_here",
+  "dateRange": {
+    "startDate": "2025-10-01T00:00:00.000Z",
+    "endDate": "2025-10-15T23:59:59.999Z"
+  }
+}
+```
+
+**Response (200) - All Campaigns Deleted (No Date Range):**
+```json
+{
+  "message": "Successfully deleted 5 campaigns from route",
+  "deletedCount": 5,
+  "routeName": "Marine Drive Route",
+  "routeId": "route_id_here",
+  "dateRange": null
+}
+```
+
+**Response (200) - No Campaigns Found:**
+```json
+{
+  "message": "No campaigns found on this route between 2025-10-01T00:00:00.000Z and 2025-10-15T23:59:59.999Z",
+  "deletedCount": 0,
+  "routeName": "Marine Drive Route",
+  "dateRange": {
+    "startDate": "2025-10-01T00:00:00.000Z",
+    "endDate": "2025-10-15T23:59:59.999Z"
+  }
+}
+```
+
+**Response (404) - Route Not Found:**
+```json
+{
+  "error": "Route not found"
+}
+```
+
+### 10. Create Route
 **Endpoint:** `POST /admin/cities/:id/routes`
 **Auth Required:** Yes (Admin)
 
@@ -961,6 +1020,7 @@ X-API-Key: <api_secret_key>
 3. **Route Management Flow:**
    ```
    POST /admin/cities/:id/routes → Create new route and truck
+   DELETE /admin/routes/:routeId/campaigns → Delete all campaigns on route
    ```
 
 ### For Hardware/Trucks:
@@ -1002,6 +1062,8 @@ X-API-Key: <api_secret_key>
 9. **Hardware API Key:** Set `API_SECRET_KEY` environment variable for hardware authentication
 10. **Playlist Generation:** Playlists are generated daily and pushed to trucks
 11. **Truck Status:** Trucks are marked offline if no heartbeat received for 5+ minutes
+12. **OTP Rate Limiting:** Maximum 3 OTP requests per phone number per minute to prevent abuse
+13. **Twilio Fallback:** Set `FORCE_DEV_MODE=true` environment variable to enable development mode OTP (code: 000000) when Twilio is unavailable
 
 ### Error Handling:
 All endpoints return consistent error format:
@@ -1019,6 +1081,30 @@ Common HTTP status codes:
 - `401`: Unauthorized (invalid/missing token)
 - `403`: Forbidden (account not verified)
 - `404`: Not Found
+- `429`: Too Many Requests (OTP rate limit exceeded)
 - `500`: Internal Server Error
+
+### OTP Rate Limiting:
+The system implements rate limiting to prevent OTP abuse:
+- **Limit**: 3 OTP requests per phone number per minute
+- **Error Response (429)**:
+```json
+{
+  "error": "Too many OTP requests. Please wait 45 seconds before trying again."
+}
+```
+
+### Twilio Error Handling:
+The system handles various Twilio errors gracefully:
+- **Rate Limit (429)**: "OTP rate limit exceeded. Please wait a few minutes before trying again."
+- **Invalid Phone (400)**: "Invalid phone number format"
+- **Auth Error (401)**: "Twilio authentication failed"
+- **Service Unavailable (403)**: "Twilio service not available"
+
+### Development Mode:
+When Twilio is unavailable, set `FORCE_DEV_MODE=true` in environment variables:
+- **OTP Code**: Always use `000000`
+- **No SMS**: No actual SMS sent
+- **Console Log**: OTP code logged to console
 
 

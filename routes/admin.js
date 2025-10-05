@@ -435,4 +435,70 @@ router.post('/scheduler/refresh', authenticateToken, requireAdmin, async (req, r
   }
 });
 
+// Delete all campaigns on a specific route within a date range
+router.delete('/routes/:routeId/campaigns', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { routeId } = req.params;
+    const { startDate, endDate } = req.body;
+    
+    // Verify route exists
+    const route = await Route.findById(routeId);
+    if (!route) {
+      return res.status(404).json({ error: 'Route not found' });
+    }
+
+    // Build query for campaigns on this route
+    let query = { route: routeId };
+    
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      query.startDate = { 
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // Get campaigns matching the criteria
+    const campaigns = await Campaign.find(query);
+    
+    if (campaigns.length === 0) {
+      const message = startDate && endDate 
+        ? `No campaigns found on this route between ${startDate} and ${endDate}`
+        : 'No campaigns found on this route';
+      
+      return res.json({ 
+        message,
+        deletedCount: 0,
+        routeName: route.name,
+        dateRange: startDate && endDate ? { startDate, endDate } : null
+      });
+    }
+
+    // Delete campaigns matching the criteria
+    const deleteResult = await Campaign.deleteMany(query);
+    
+    // Log the action
+    const logMessage = startDate && endDate 
+      ? `Admin ${req.user._id} deleted ${deleteResult.deletedCount} campaigns from route ${routeId} (${route.name}) between ${startDate} and ${endDate}`
+      : `Admin ${req.user._id} deleted ${deleteResult.deletedCount} campaigns from route ${routeId} (${route.name})`;
+    
+    console.log(logMessage);
+    
+    const message = startDate && endDate 
+      ? `Successfully deleted ${deleteResult.deletedCount} campaigns from route between ${startDate} and ${endDate}`
+      : `Successfully deleted ${deleteResult.deletedCount} campaigns from route`;
+    
+    res.json({
+      message,
+      deletedCount: deleteResult.deletedCount,
+      routeName: route.name,
+      routeId: routeId,
+      dateRange: startDate && endDate ? { startDate, endDate } : null
+    });
+  } catch (error) {
+    console.error('Delete route campaigns error:', error);
+    res.status(500).json({ error: 'Failed to delete campaigns' });
+  }
+});
+
 module.exports = router;

@@ -68,7 +68,7 @@ router.post('/campaigns/:id/approve', authenticateToken, requireAdmin, validateR
 
     // Update campaign
     const packageDays = parseInt(campaign.package);
-    const endDate = moment(startDate).add(packageDays, 'days').toDate();
+    const endDate = moment(startDate).add(packageDays - 1, 'days').toDate();
 
     campaign.status = 'approved';
     campaign.startDate = new Date(startDate);

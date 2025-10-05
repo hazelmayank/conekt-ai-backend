@@ -42,7 +42,7 @@ router.post('/', authenticateToken, requireAdvertiser, validateRequest(schemas.c
 
     // Calculate end date
     const packageDays = parseInt(package);
-    const endDate = moment(startDate).add(packageDays, 'days').toDate();
+    const endDate = moment(startDate).add(packageDays - 1, 'days').toDate();
 
     // Create campaign
     const campaign = new Campaign({

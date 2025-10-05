@@ -312,7 +312,7 @@ X-API-Key: <api_secret_key>
 **Endpoint:** `POST /campaigns`
 **Auth Required:** Yes (Advertiser)
 
-**Description:** Create a new advertising campaign. Start date must be 1st or 15th of the month, but can be any past, present, or future date.
+**Description:** Create a new advertising campaign. Start date must be 1st or 15th of the month, but can be any past, present, or future date. The campaign runs for the exact number of days specified in the package.
 
 **Request Body:**
 ```json
@@ -993,14 +993,15 @@ X-API-Key: <api_secret_key>
 
 1. **Phone Number Format:** Must be in E.164 format (`+91XXXXXXXXXX`)
 2. **Start Dates:** Campaigns can only start on 1st or 15th of the month, but can be any past, present, or future date.
-3. **Route Capacity:** Maximum 7 concurrent campaigns per route
-4. **Video Requirements:** Only video files, max 100MB, automatically scaled to 1080p
-5. **Authentication:** JWT tokens expire in 7 days
-6. **Availability Logic:** System checks for overlapping campaigns and suggests earliest available date
-7. **Admin Access:** Admin users must be created manually in the database with `role: 'admin'`
-8. **Hardware API Key:** Set `API_SECRET_KEY` environment variable for hardware authentication
-9. **Playlist Generation:** Playlists are generated daily and pushed to trucks
-10. **Truck Status:** Trucks are marked offline if no heartbeat received for 5+ minutes
+3. **Campaign Duration:** A 15-day package runs for exactly 15 days (e.g., Oct 1st to Oct 15th)
+4. **Route Capacity:** Maximum 7 concurrent campaigns per route
+5. **Video Requirements:** Only video files, max 100MB, automatically scaled to 1080p
+6. **Authentication:** JWT tokens expire in 7 days
+7. **Availability Logic:** System checks for overlapping campaigns and suggests earliest available date
+8. **Admin Access:** Admin users must be created manually in the database with `role: 'admin'`
+9. **Hardware API Key:** Set `API_SECRET_KEY` environment variable for hardware authentication
+10. **Playlist Generation:** Playlists are generated daily and pushed to trucks
+11. **Truck Status:** Trucks are marked offline if no heartbeat received for 5+ minutes
 
 ### Error Handling:
 All endpoints return consistent error format:
